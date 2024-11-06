@@ -2,7 +2,7 @@
 #
 # Builds APK packages for Alpine Linux. Cannot run as root.
 # Usage: doas -u build sh build-packages.sh $ABUILD_WORKING_DIRECTORY $SIGNING_KEY_NAME $ALPINE_APORTS_VERSION
-#        $OPENFORTIVM_VPN_VERSION $OPENFORTIVM_CONF_VERSION
+#        $OPENFORTIVM_VPN_VERSION $OPENFORTIVM_CONF_VERSION $OPENFORTIVM_STATUS_VERSION
 #
 
 
@@ -85,6 +85,39 @@ license="MIT"
 depends="alpine-conf>=$(echo "$5" | sed 's/_.*//')"
 source="
 	\$pkgname-\$pkgver.tar.gz::https://github.com/vuhuy/openfortivm-conf/archive/v\$pkgver.tar.gz
+	"
+options="!check" # No test suite
+
+build() {
+	make VERSION=\$pkgver-r\$pkgrel
+}
+
+package() {
+	make install DESTDIR="\$pkgdir"
+}
+
+EOF
+
+abuild checksum
+abuild -r
+
+cd ../../../
+
+# Create openfortivm-status APK
+mkdir -p aports/testing/openfortivm-status
+cd aports/testing/openfortivm-status/
+
+cat << EOF > APKBUILD
+# Maintainer: Vuhuy Luu <git@shibe.nl>
+pkgname=openfortivm-status
+pkgver=$6
+pkgrel=0
+pkgdesc="Status server for openfortivm "
+url="https://github.com/vuhuy/openfortivm-status"
+arch="all"
+license="MIT"
+source="
+	\$pkgname-\$pkgver.tar.gz::https://github.com/vuhuy/openfortivm-status/archive/v\$pkgver.tar.gz
 	"
 options="!check" # No test suite
 

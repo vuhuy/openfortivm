@@ -1,0 +1,49 @@
+name: Build packages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_images:
+    name: Build APK packages
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.20.3
+    permissions:
+      contents: write
+    env:
+      SIGNING_KEY: git@shibe.nl-67292f84
+      ABUILD_WORKING_DIRECTORY: ${{ github.workspace }}/apk
+      ALPINE_APORTS_VERSION: 3.20-stable
+      GO_VERSION: 1.23.3
+      OPENFORTIVM_VPN_VERSION: 1.22.1_git20241109
+      OPENFORTIVM_CONF_VERSION: 3.18.1_git20241109
+      OPENFORTIVM_STATUS_VERSION: 0.0.1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare environment
+        env:
+          SIGNING_KEY_RSA: ${{ secrets.ABUILD_RSA_KEY }}
+          SIGNING_KEY_RSA_PUB: ${{ vars.ABUILD_RSA_KEY_PUB }}
+        run: |
+          chmod +x scripts/prepare-env.sh
+          scripts/prepare-env.sh ${ABUILD_WORKING_DIRECTORY} ${GO_VERSION}
+          
+      - name: Build APK packages
+        run: |
+          doas -u build sh ${ABUILD_WORKING_DIRECTORY}/build-packages.sh ${ABUILD_WORKING_DIRECTORY} ${SIGNING_KEY} ${ALPINE_APORTS_VERSION} ${OPENFORTIVM_VPN_VERSION} ${OPENFORTIVM_CONF_VERSION} ${OPENFORTIVM_STATUS_VERSION}
+
+      - name: Prepare workflow artifacts
+        if: (!startsWith(github.ref, 'refs/tags/'))
+        run: |
+          chmod +x scripts/prepare-upload.sh
+          scripts/prepare-upload.sh ${GITHUB_WORKSPACE} ${ABUILD_WORKING_DIRECTORY} git$(date +"%Y%m%d")+${GITHUB_SHA:0:7}
+
+      - name: Upload workflow artifacts
+        if: (!startsWith(github.ref, 'refs/tags/'))
+        uses: actions/upload-artifact@v4
+        with:
+          name: openfortivm-build-packages-${{ github.run_number }}
+          path: ${{ github.workspace }}/publish

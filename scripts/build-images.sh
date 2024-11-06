@@ -21,7 +21,7 @@ profile_vpnovmt() {
 	arch="x86_64"
 	kernel_addons=
 	kernel_flavors="virt"
-	apks="$apks open-vm-tools open-vm-tools-guestinfo open-vm-tools-deploypkg iptables ppp agetty doas tiny-cloud-nocloud openfortivm-conf openfortivm-vpn"
+	apks="$apks open-vm-tools open-vm-tools-guestinfo open-vm-tools-deploypkg iptables ppp agetty doas tiny-cloud-nocloud openfortivm-conf openfortivm-vpn openfortivm-status"
 	apkovl="aports/scripts/genapkovl-vpnovmt.sh"
 }
 EOF
@@ -127,6 +127,7 @@ agetty
 doas
 openfortivm-conf
 openfortivm-vpn
+openfortivm-status
 EOF
 
 mkdir -p "$tmp"/etc/doas.d
@@ -135,6 +136,8 @@ permit nopass root as root cmd /usr/bin/openfortivpn
 permit nopass vpnuser as root cmd /usr/bin/openfortivpn
 permit nopass root as root cmd openfortivpn
 permit nopass vpnuser as root cmd openfortivpn
+permit nopass vpnuser as root cmd reboot
+permit nopass vpnuser as root cmd poweroff
 EOF
 
 mkdir -p "$tmp"/etc/iptables
@@ -153,6 +156,7 @@ makefile root:root 0600 "$tmp"/etc/iptables/rules-save <<'EOF'
 [0:0] -A INPUT -i eth1 -p udp -m udp --sport 67:68 --dport 67:68 -j ACCEPT
 [0:0] -A INPUT -i eth0 -p icmp -m state --state NEW -j ACCEPT
 [0:0] -A INPUT -i eth1 -p icmp -m state --state NEW -j ACCEPT
+[0:0] -A INPUT -i eth1 -p tcp -m tcp --dport 8080 -m state --state NEW -j ACCEPT
 [0:0] -A FORWARD -m state --state INVALID -j DROP
 [0:0] -A FORWARD -i eth1 -j ACCEPT
 [0:0] -A FORWARD -i ppp0 -j ACCEPT

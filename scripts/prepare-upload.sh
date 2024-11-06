@@ -15,17 +15,21 @@ find $2/packages -type f -name "*.apk" -exec cp {} publish/apk \;
 # Collect images
 mkdir -p publish/iso
 
-image_name_ovmt="openfortivm-ovmt-$3-x86_64.iso"
-cp $2/iso/openfortivm-ovmt.iso publish/iso/${image_name_ovmt}
+if [ -f $2/iso/openfortivm-ovmt.iso ]; then
+	image_name_ovmt="openfortivm-ovmt-$3-x86_64.iso"
+	cp $2/iso/openfortivm-ovmt.iso publish/iso/${image_name_ovmt}
+fi
 
-image_name_virt="openfortivm-virt-$3-x86_64.iso"
-cp $2/iso/openfortivm-virt.iso publish/iso/${image_name_virt}
+if [ -f $2/iso/openfortivm-virt.iso ]; then
+	image_name_virt="openfortivm-virt-$3-x86_64.iso"
+	cp $2/iso/openfortivm-virt.iso publish/iso/${image_name_virt}
+fi
 
 # Create checksums
 cd publish
 find . -type f \( -name "*.apk" -o -name "*.iso" \) -exec sh -c '
-  for file; do
-    sha256sum "${file}" > "${file}.sha256"
-  done
+	for file; do
+		sha256sum "${file}" > "${file}.sha256"
+	done
 ' sh {} +
 cd ..
